@@ -10,7 +10,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 # Import helper classes for OCR and field extraction
 from ocr_utils import OCRUtils
-from field_extractors import GenericCardFieldExtractor
+from field_extractors import GenericCardFieldExtractor, BaseFieldExtractor,InvoiceFieldExtractor
 
 
 
@@ -21,9 +21,9 @@ setx GOOGLE_APPLICATION_CREDENTIALS "C:\path\vision-key.json"
 """
 KEY_PATH = r"D:\College\_hk5\AItesting\simple-OCR\data\vision-key.json"
 load_dotenv()
-gemini_api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GROQ_API_KEY")
+gemini_api_key = os.getenv("GEMINI_API_KEY1") or os.getenv("GROQ_API_KEY")
 
-ocr_utils = OCRUtils(key_path=KEY_PATH)
+ocr_utils = OCRUtils(key_path=None)
 
 
 st.set_page_config(page_title="OCR with EasyOCR and Google Vision", layout="wide")
@@ -176,8 +176,8 @@ elif method == "Paste image":
 
             st.text_area("Detected Text", extracted_text, height=200)
             if extracted_text:
-                # Use the invoice field extractor for pasted images
-                fields = invoice_extractor.extract_fields(extracted_text)
+
+                fields = GenericCardFieldExtractor().extract_fields(extracted_text)
                 if fields:
                     st.subheader("Structured Invoice Fields (beta)")
                     st.json(fields)
@@ -196,7 +196,7 @@ elif method == "Paste image":
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                 )
                 response = client.chat.completions.create(
-                    model="gemini-1.5-flash",
+                    model="gemini-2.5-flash",
                     messages=[
                         {
                             "role": "system",

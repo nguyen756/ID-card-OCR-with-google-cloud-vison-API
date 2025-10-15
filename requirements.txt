@@ -8,3 +8,6 @@ fitz
 st_img_pastebutton
 openai
 dotenv
+torch
+google-cloud-vision
+python-dotenv
