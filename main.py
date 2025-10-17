@@ -10,20 +10,23 @@ from openai import OpenAI
 from dotenv import load_dotenv
 # Import helper classes for OCR and field extraction
 from ocr_utils import OCRUtils
-from field_extractors import GenericCardFieldExtractor, BaseFieldExtractor,InvoiceFieldExtractor
+from field_extractors import GenericCardFieldExtractor, BaseFieldExtractor,InvoiceFieldExtractor,StudentIDFieldExtractor
 
 
 
 
 """
 truoc luc xai nho trong powershell
-setx GOOGLE_APPLICATION_CREDENTIALS "C:\path\vision-key.json"
+setx GOOGLE_APPLICATION_CREDENTIALS "D:\College\_hk5\AItesting\ID-card-OCR-with-google-cloud-vison-API\data\vision-key.json"
 """
-KEY_PATH = r"D:\College\_hk5\AItesting\simple-OCR\data\vision-key.json"
+KEY_PATH = r"D:\College\_hk5\AItesting\ID-card-OCR-with-google-cloud-vison-API\data\vision-key.json"
+VISION_LABEL = "Google Vision (Free tier ~1k req/mo)"
+
+
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY1") or os.getenv("GROQ_API_KEY")
 
-ocr_utils = OCRUtils(key_path=None)
+ocr_utils = OCRUtils(key_path=KEY_PATH)
 
 
 st.set_page_config(page_title="OCR with EasyOCR and Google Vision", layout="wide")
@@ -34,7 +37,7 @@ st.write(
 
 # Allow the user to choose the OCR engine
 engine = st.sidebar.radio(
-    "Select OCR Engine:", ["EasyOCR", "Google Vision (Free tier ~1k req/mo)"]
+    "Select OCR Engine:", ["EasyOCR",VISION_LABEL]
 )
 
 # Resize large images to prevent excessive processing time and memory usage
@@ -123,7 +126,7 @@ if method == "Upload file":
             st.image(pil_img, caption="Uploaded Image", width="stretch")
 
             if st.button("Extract Text"):
-                if engine == "Google Vision":
+                if engine == VISION_LABEL:
                     try:
                         extracted_text = ocr_utils.vision_ocr(pil_img)
                     except Exception as e:
@@ -138,7 +141,7 @@ if method == "Upload file":
                 # Display extracted text and structured invoice fields
                 st.text_area("Detected text", extracted_text, height=200)
                 if extracted_text:
-                    extractor = GenericCardFieldExtractor()
+                    extractor = StudentIDFieldExtractor()
                     fields = extractor.extract_fields(extracted_text)
                     if fields:
                         st.subheader("Structured ID Fields (beta)")
@@ -177,7 +180,7 @@ elif method == "Paste image":
             st.text_area("Detected Text", extracted_text, height=200)
             if extracted_text:
 
-                fields = GenericCardFieldExtractor().extract_fields(extracted_text)
+                fields = StudentIDFieldExtractor().extract_fields(extracted_text)
                 if fields:
                     st.subheader("Structured Invoice Fields (beta)")
                     st.json(fields)

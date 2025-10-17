@@ -16,7 +16,8 @@ class OCRUtils:
         env_key = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         self.key_path = key_path or env_key
         self.credentials_info = credentials_info
-        self._vision_client =vision.ImageAnnotatorClient()
+        #self._vision_client =vision.ImageAnnotatorClient()
+        self._vision_client =None
 
     def resize_image(self, image: Image.Image, max_dim: int = 1600) -> Image.Image:
 
