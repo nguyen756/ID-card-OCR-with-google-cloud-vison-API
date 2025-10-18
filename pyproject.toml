@@ -17,6 +17,7 @@ dependencies = [
     "protobuf>=4.25.3,<5",
     "google-cloud-vision>=3.10.2",
     "opencv-python-headless==4.10.0.84",
+    "google-cloud-documentai>=3.7.0",
 ]
 
 [tool.poetry]

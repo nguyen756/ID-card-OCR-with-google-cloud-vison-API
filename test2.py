@@ -89,26 +89,26 @@ if mode == "Upload file(s)":
                 combined = tidy_text("\n\n".join(full_text))
                 if combined:
                     st.download_button("Download text", data=combined, file_name="pdf_ocr.txt", mime="text/plain")
-                if use_docai and docai_kv is not None:
-                    try:
-                        kv_fields, tables = docai_kv.extract(pil)
-                        if kv_fields:
-                            st.subheader("Fields (Document AI)")
-                            st.json(kv_fields)
-                            merged = {**fields, **kv_fields} if fields else kv_fields
-                            st.subheader("Merged Fields")
-                            st.json(merged)
-                        if tables:
-                            st.subheader("Tables (Document AI)")
-                            for i, t in enumerate(tables, 1):
-                                st.caption(f"Table {i}")
-                                if t.get("headers"):
-                                    st.write("| " + " | ".join(t["headers"]) + " |")
-                                    st.write("| " + " | ".join(["---"] * len(t["headers"])) + " |")
-                                for row in t.get("rows", []):
-                                    st.write("| " + " | ".join(row) + " |")
-                    except Exception as e:
-                        st.error(f"DocAI error: {e}")
+                    if use_docai and docai_kv is not None:
+                        try:
+                            kv_fields, tables = docai_kv.extract(pil)
+                            if kv_fields:
+                                st.subheader("Fields (Document AI)")
+                                st.json(kv_fields)
+                                merged = {**fields, **kv_fields} if fields else kv_fields
+                                st.subheader("Merged Fields")
+                                st.json(merged)
+                            if tables:
+                                st.subheader("Tables (Document AI)")
+                                for i, t in enumerate(tables, 1):
+                                    st.caption(f"Table {i}")
+                                    if t.get("headers"):
+                                        st.write("| " + " | ".join(t["headers"]) + " |")
+                                        st.write("| " + " | ".join(["---"] * len(t["headers"])) + " |")
+                                    for row in t.get("rows", []):
+                                        st.write("| " + " | ".join(row) + " |")
+                        except Exception as e:
+                            st.error(f"DocAI error: {e}")
             else:
                 pil = Image.open(f).convert("RGB")
                 st.image(pil, caption=f.name, width="stretch")
@@ -147,7 +147,7 @@ else:
     if data:
         _, b64 = data.split(",", 1)
         pil = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
-        st.image(pil, caption="Pasted Image", width="stretch")
+        st.image(pil, caption="Pasted Image", width="auto")
         if st.button("Extract"):
             text = ocr_image(pil)
             cleaned = tidy_text(text)

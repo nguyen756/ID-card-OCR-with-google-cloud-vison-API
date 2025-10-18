@@ -9,3 +9,4 @@ openai
 python-dotenv
 torch
 google-cloud-vision
+google-cloud-documentai
