@@ -1,12 +1,12 @@
-#main.py
 import io, base64, os
 import streamlit as st
 import numpy as np
 from PIL import Image
-import fitz 
+import fitz  # PyMuPDF
 from dotenv import load_dotenv
 from pathlib import Path
 
+# Custom Streamlit component for paste-from-clipboard (optional)
 try:
     from st_img_pastebutton import paste
 except Exception:
@@ -21,8 +21,9 @@ from docAI import StudentIdParser, ReceiptParser
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 st.set_page_config(page_title="OCR (EasyOCR / Google Vision)", layout="wide")
-st.title("📄 OCR (EasyOCR / Google Vision)")
+st.title("OCR (EasyOCR / Google Vision)")
 
+# --- Keep ORIGINAL radios ---
 engine = st.sidebar.radio("Engine", ["EasyOCR", "Google Vision"])
 lang_choice = st.sidebar.radio("Language set", ["English + Vietnamese", "English + Japanese"])
 lang_set = "vi" if lang_choice == "English + Vietnamese" else "ja"
@@ -34,7 +35,7 @@ docai_mode = st.sidebar.radio(
     help="Choose processor to extract fields."
 )
 
-mode = st.sidebar.radio("Input", ["Upload file(s)", "Paste image"]) 
+mode = st.sidebar.radio("Input", ["Upload file(s)", "Paste image"])
 
 ocr = OCRUtils()
 
@@ -57,7 +58,7 @@ def ocr_image_both(pil_img):
         return raw, pretty
     else:
         return run_easy(np.array(pil_img))
-    
+
 docai_parser = None
 if docai_mode == "Student ID":
     try:
@@ -96,8 +97,9 @@ def process_image(pil_img, label="Image"):
     raw_text, pretty_text = ocr_image_both(pil_img)
 
     st.subheader("Text")
+    st.text_area("", raw_text or "", height=220)
     regex_fields = {}
-    if docai_mode != "Receipt":  # apply regex ID parser only for ID-like docs
+    if docai_mode != "Receipt": 
         regex_fields = parse_id_fields(tidy_text(pretty_text or raw_text or ""))
         if regex_fields:
             st.subheader("Fields (Regex Parser)")
@@ -111,6 +113,8 @@ def process_image(pil_img, label="Image"):
         except Exception as e:
             st.error(f"DocAI error: {e}")
 
+
+# --- UI flows (unchanged structure) ---
 if mode == "Upload file(s)":
     files = st.file_uploader("Upload image(s) or PDF(s)", type=["jpg","jpeg","png","webp","pdf"], accept_multiple_files=True)
     if files:
@@ -124,8 +128,10 @@ if mode == "Upload file(s)":
                     st.caption(f"Page {i}")
                     txt = page.get_text().strip()
                     if txt:
+                        # Show embedded text verbatim so users can see what PDF contains
                         st.text_area(f"Embedded Text (p{i})", txt, height=160)
                         full_text_pages.append(txt)
+                        # Also send rasterized page to DocAI so fields are extracted too
                         if docai_parser is not None:
                             try:
                                 pix = page.get_pixmap(dpi=200)
@@ -144,6 +150,7 @@ if mode == "Upload file(s)":
                             raw = doc.extract_image(xref)["image"]
                             pil = Image.open(io.BytesIO(raw)).convert("RGB")
                             process_image(pil, label=f"Page {i} - Image {j}")
+                # After pages, try regex on embedded text too (ID only)
                 combined = "".join(full_text_pages)
                 if combined and docai_mode != "Receipt":
                     fields_from_pdf_text = parse_id_fields(tidy_text(combined))
@@ -157,6 +164,7 @@ if mode == "Upload file(s)":
                 pil = Image.open(f).convert("RGB")
                 process_image(pil, label=f.name)
 else:
+    # Paste image mode
     if paste is not None:
         data = paste(label="📋 Click then Ctrl+V your image", key="paste")
         if data:
