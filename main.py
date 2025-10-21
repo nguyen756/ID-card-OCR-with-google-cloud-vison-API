@@ -17,13 +17,11 @@ from layout_utils import easyocr_pretty
 from id_parser import tidy_text, parse_id_fields
 from docAI import StudentIdParser, ReceiptParser
 
-# Load env
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 st.set_page_config(page_title="OCR (EasyOCR / Google Vision)", layout="wide")
 st.title("OCR (EasyOCR / Google Vision)")
 
-# --- Keep ORIGINAL radios ---
 engine = st.sidebar.radio("Engine", ["EasyOCR", "Google Vision"])
 lang_choice = st.sidebar.radio("Language set", ["English + Vietnamese", "English + Japanese"])
 lang_set = "vi" if lang_choice == "English + Vietnamese" else "ja"
@@ -72,22 +70,14 @@ elif docai_mode == "Receipt":
         st.warning(f"Receipt Parser (DocAI) not ready: {e}")
 
 
-def display_docai_results(kv_fields, tables, mode_name, regex_fields={}):
+def display_docai_results(kv_fields, mode_name, regex_fields={}):
     if kv_fields:
         st.subheader(f"Fields ({mode_name})")
         st.json(kv_fields)
         merged = {**regex_fields, **kv_fields}
         st.subheader("Merged Fields")
         st.json(merged)
-    if tables:
-        st.subheader(f"Tables ({mode_name})")
-        for i, t in enumerate(tables, 1):
-            st.caption(f"Table {i}")
-            if t.get("headers"):
-                st.write("| " + " | ".join(t["headers"]) + " |")
-                st.write("| " + " | ".join(["---"] * len(t["headers"])) + " |")
-            for row in t.get("rows", []):
-                st.write("| " + " | ".join(row) + " |")
+    
 
 
 
@@ -105,16 +95,14 @@ def process_image(pil_img, label="Image"):
             st.subheader("Fields (Regex Parser)")
             st.json(regex_fields)
 
-    # 3) DocAI (if selected)
+
     if docai_parser is not None:
         try:
-            kv_fields, tables, docai_fulltext = docai_parser.extract_with_text(pil_img)
-            display_docai_results(kv_fields, tables, docai_mode, regex_fields)
+            kv_fields, *rest = docai_parser.extract_with_text(pil_img)
+            display_docai_results(kv_fields, docai_mode, regex_fields)
         except Exception as e:
             st.error(f"DocAI error: {e}")
 
-
-# --- UI flows (unchanged structure) ---
 if mode == "Upload file(s)":
     files = st.file_uploader("Upload image(s) or PDF(s)", type=["jpg","jpeg","png","webp","pdf"], accept_multiple_files=True)
     if files:
@@ -128,15 +116,15 @@ if mode == "Upload file(s)":
                     st.caption(f"Page {i}")
                     txt = page.get_text().strip()
                     if txt:
-                        # Show embedded text verbatim so users can see what PDF contains
                         st.text_area(f"Embedded Text (p{i})", txt, height=160)
                         full_text_pages.append(txt)
-                        # Also send rasterized page to DocAI so fields are extracted too
                         if docai_parser is not None:
                             try:
                                 pix = page.get_pixmap(dpi=200)
                                 pil_for_docai = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                                kv_fields, tables, _ = docai_parser.extract_with_text(pil_for_docai)
+
+
+                                kv_fields, *rest = docai_parser.extract_with_text(pil_for_docai)
                                 if kv_fields: all_docai_fields.update(kv_fields)
                             except Exception as e:
                                 st.error(f"DocAI error on page {i}: {e}")
@@ -149,8 +137,17 @@ if mode == "Upload file(s)":
                             xref = im[0]
                             raw = doc.extract_image(xref)["image"]
                             pil = Image.open(io.BytesIO(raw)).convert("RGB")
+
+
                             process_image(pil, label=f"Page {i} - Image {j}")
-                # After pages, try regex on embedded text too (ID only)
+                            if docai_parser is not None:
+                                try:
+                                    kv_fields, *rest = docai_parser.extract_with_text(pil_for_docai)
+                                    if kv_fields: all_docai_fields.update(kv_fields)
+                                except Exception as e:
+                                    st.error(f"DocAI error on page {i}: {e}")
+
+
                 combined = "".join(full_text_pages)
                 if combined and docai_mode != "Receipt":
                     fields_from_pdf_text = parse_id_fields(tidy_text(combined))
@@ -164,7 +161,8 @@ if mode == "Upload file(s)":
                 pil = Image.open(f).convert("RGB")
                 process_image(pil, label=f.name)
 else:
-    # Paste image mode
+
+
     if paste is not None:
         data = paste(label="📋 Click then Ctrl+V your image", key="paste")
         if data:
