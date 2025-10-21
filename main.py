@@ -140,12 +140,7 @@ if mode == "Upload file(s)":
 
 
                             process_image(pil, label=f"Page {i} - Image {j}")
-                            if docai_parser is not None:
-                                try:
-                                    kv_fields, *rest = docai_parser.extract_with_text(pil_for_docai)
-                                    if kv_fields: all_docai_fields.update(kv_fields)
-                                except Exception as e:
-                                    st.error(f"DocAI error on page {i}: {e}")
+                           
 
 
                 combined = "".join(full_text_pages)
